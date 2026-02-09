@@ -1,0 +1,7 @@
+{
+  "name": "Lumena - Rendimiento Elite",
+  "description": "Una plataforma de gestión deportiva de alto rendimiento que utiliza IA para optimizar el entrenamiento de atletas de élite.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
