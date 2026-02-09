@@ -1,172 +1,121 @@
 
-import React, { useState, useEffect } from 'react';
-import { AthleteStats, GeminiInsight } from '../types';
-import { getPerformanceInsight } from '../services/geminiService';
+import React, { useState, useMemo } from 'react';
 
-const MOCK_ATHLETES: AthleteStats[] = [
-  { id: '1', name: 'Marco Silva', speed: 92, stamina: 85, agility: 88, recovery: 78, performanceScore: 86 },
-  { id: '2', name: 'Laura Ortiz', speed: 84, stamina: 95, agility: 82, recovery: 90, performanceScore: 88 },
-  { id: '3', name: 'Julian Reyes', speed: 78, stamina: 70, agility: 94, recovery: 65, performanceScore: 77 },
-];
-
-interface AthletesTabProps {
-  userEmail: string;
+interface Player {
+  id: string;
+  name: string;
+  category: string;
+  dorsal: string;
+  avatarColor: string;
 }
 
-export const AthletesTab: React.FC<AthletesTabProps> = ({ userEmail }) => {
-  const [selectedAthlete, setSelectedAthlete] = useState<AthleteStats>(MOCK_ATHLETES[0]);
-  const [insight, setInsight] = useState<GeminiInsight | null>(null);
-  const [loadingInsight, setLoadingInsight] = useState(false);
+const MOCK_PLAYERS: Player[] = [
+  { id: '1', name: 'Carlos Martínez', category: 'Senior', dorsal: '10', avatarColor: 'from-orange-200 to-orange-400' },
+  { id: '2', name: 'Alejandro Ruiz', category: 'Sub-17', dorsal: '7', avatarColor: 'from-yellow-100 to-yellow-300' },
+  { id: '3', name: 'Mateo Silva', category: 'Senior', dorsal: '1', avatarColor: 'from-amber-200 to-amber-500' },
+  { id: '4', name: 'Hugo Ferrer', category: 'Sub-17', dorsal: '4', avatarColor: 'from-cyan-100 to-cyan-300' },
+  { id: '5', name: 'Dani López', category: 'Senior', dorsal: '11', avatarColor: 'from-rose-200 to-rose-400' },
+];
 
-  const fetchInsight = async (athlete: AthleteStats) => {
-    setLoadingInsight(true);
-    try {
-      const result = await getPerformanceInsight(athlete);
-      setInsight(result);
-    } catch (error) {
-      console.error("Error fetching insight", error);
-    } finally {
-      setLoadingInsight(false);
-    }
-  };
+const CATEGORIES = ['Todos', 'Sub-17', 'Senior', 'Femenil'];
 
-  useEffect(() => {
-    fetchInsight(selectedAthlete);
-  }, [selectedAthlete.id]);
+interface AthletesTabProps {
+  onManageTeams: () => void;
+  onCreatePlayer: () => void;
+  onPlayerSelect: (id: string) => void;
+}
+
+export const AthletesTab: React.FC<AthletesTabProps> = ({ onManageTeams, onCreatePlayer, onPlayerSelect }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('Todos');
+
+  const filteredPlayers = useMemo(() => {
+    return MOCK_PLAYERS.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.dorsal.includes(searchQuery);
+      const matchesFilter = activeFilter === 'Todos' || p.category === activeFilter;
+      return matchesSearch && matchesFilter;
+    });
+  }, [searchQuery, activeFilter]);
 
   return (
-    <div className="animate-in fade-in slide-in-from-right-4 duration-500 p-4 space-y-6">
-      <header>
-        <h2 className="text-2xl font-bold">Mis Atletas</h2>
-        <p className="text-slate-400 text-sm">Análisis de rendimiento avanzado por IA</p>
-      </header>
-
-      {/* Athlete Selection */}
-      <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
-        {MOCK_ATHLETES.map(athlete => (
-          <button
-            key={athlete.id}
-            onClick={() => setSelectedAthlete(athlete)}
-            className={`flex-shrink-0 px-6 py-4 rounded-2xl border transition-all ${
-              selectedAthlete.id === athlete.id 
-                ? 'bg-primary/10 border-primary text-primary' 
-                : 'bg-white/5 border-white/10 text-slate-400'
-            }`}
-          >
-            <p className="font-bold whitespace-nowrap">{athlete.name}</p>
-            <p className="text-[10px] font-bold uppercase opacity-70">Score: {athlete.performanceScore}</p>
-          </button>
-        ))}
-      </div>
-
-      {/* Main Profile Card */}
-      <div className="bg-[#193322] border border-white/10 rounded-3xl p-6 relative overflow-hidden group">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:scale-125 transition-transform"></div>
+    <div className="flex flex-col min-h-screen animate-in fade-in slide-in-from-right-4 duration-500 px-6 pt-4 pb-20">
+      <div className="flex flex-col gap-6 mb-8">
+        <h2 className="text-3xl font-black text-white tracking-tight">Gestionar Jugadores</h2>
         
-        <div className="flex flex-col gap-6 relative z-10">
-          <div className="flex items-center gap-5">
-            <div className="size-20 rounded-2xl bg-slate-800 border-2 border-primary flex items-center justify-center text-3xl font-black text-primary shadow-lg">
-               {selectedAthlete.name[0]}
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold">{selectedAthlete.name}</h3>
-              <p className="text-slate-400 text-xs font-medium">Delantero • 24 años • Pro</p>
-              <div className="mt-3 flex items-center gap-3">
-                <div className="px-3 py-1 rounded-full bg-background-dark/50 border border-white/10 text-[10px] font-black text-primary uppercase">Elite</div>
-                <div className="text-[10px] font-black text-slate-500 uppercase">Est. 2024</div>
-              </div>
-            </div>
-            <div className="flex flex-col items-center justify-center bg-background-dark/50 size-16 rounded-2xl border border-white/10">
-              <span className="text-2xl font-black text-primary leading-none">{selectedAthlete.performanceScore}</span>
-              <span className="text-[8px] uppercase tracking-widest text-slate-500 font-black mt-1">Total</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <StatMetric label="Velocidad" value={selectedAthlete.speed} />
-            <StatMetric label="Resistencia" value={selectedAthlete.stamina} />
-            <StatMetric label="Agilidad" value={selectedAthlete.agility} />
-            <StatMetric label="Recuperación" value={selectedAthlete.recovery} />
-          </div>
+        <div className="relative">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">search</span>
+          <input 
+            type="text"
+            placeholder="Buscar jugador..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-slate-600 focus:border-primary/50 transition-all outline-none"
+          />
         </div>
       </div>
 
-      {/* AI Insights Card */}
-      <div className="bg-[#193322] border-2 border-primary/20 rounded-3xl p-6 relative overflow-hidden">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="bg-primary/20 p-2 rounded-xl">
-              <span className="material-symbols-outlined text-primary text-[20px] font-bold">psychology</span>
-            </div>
-            <h4 className="font-bold text-sm uppercase tracking-widest">Análisis IA Lumena</h4>
-          </div>
-          {loadingInsight && (
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-          )}
+      <div className="space-y-6 mb-8">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Equipos</h3>
+          <button 
+            onClick={onManageTeams}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1c3324] border border-primary/20 rounded-xl text-primary text-[12px] font-black active:scale-95 transition-all"
+          >
+            <span className="material-symbols-outlined text-[18px]">settings</span>
+            Gestionar Equipos
+          </button>
         </div>
 
-        {loadingInsight ? (
-          <div className="space-y-4 animate-pulse">
-            <div className="h-4 bg-white/5 rounded w-3/4"></div>
-            <div className="h-4 bg-white/5 rounded w-full"></div>
-            <div className="pt-6 space-y-2">
-              <div className="h-10 bg-white/5 rounded-xl"></div>
-              <div className="h-10 bg-white/5 rounded-xl"></div>
-            </div>
-          </div>
-        ) : insight ? (
-          <div className="space-y-6">
-            <p className="text-slate-300 text-sm leading-relaxed font-medium italic">
-              "{insight.analysis}"
-            </p>
-            
-            <div className="space-y-3">
-              <h5 className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-3">Estrategias de Mejora</h5>
-              {insight.recommendations.map((rec, i) => (
-                <div key={i} className="flex gap-4 bg-background-dark/30 p-4 rounded-2xl border border-white/5 text-sm group hover:border-primary/20 transition-colors">
-                  <div className="size-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-black shrink-0">
-                    {i + 1}
-                  </div>
-                  <span className="text-slate-300 leading-snug">{rec}</span>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-2 px-2">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveFilter(cat)}
+              className={`flex-shrink-0 px-6 py-3 rounded-full border text-[13px] font-bold transition-all ${
+                activeFilter === cat 
+                  ? 'bg-primary border-primary text-[#0a120d]' 
+                  : 'bg-white/5 border-white/10 text-slate-400'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Plantilla ({filteredPlayers.length})</h3>
+        </div>
+
+        <div className="space-y-3">
+          {filteredPlayers.map(player => (
+            <div 
+              key={player.id}
+              onClick={() => onPlayerSelect(player.id)}
+              className="bg-[#152119] border border-white/5 p-4 rounded-2xl flex items-center justify-between active:scale-[0.98] transition-all group cursor-pointer"
+            >
+              <div className="flex items-center gap-4">
+                <div className={`size-14 rounded-xl bg-gradient-to-br ${player.avatarColor} shadow-lg border border-white/10`}></div>
+                <div>
+                  <h4 className="font-bold text-[17px] text-white tracking-tight">{player.name}</h4>
+                  <p className="text-[12px] font-medium text-slate-500">{player.category} • Dorsal {player.dorsal}</p>
                 </div>
-              ))}
+              </div>
+              <button className="text-slate-600 hover:text-white transition-colors">
+                <span className="material-symbols-outlined">more_vert</span>
+              </button>
             </div>
-
-            <div className={`mt-4 py-3 px-4 rounded-xl text-center text-[10px] font-black uppercase tracking-widest border border-white/10 ${
-              insight.priorityLevel === 'High' ? 'bg-red-500/10 text-red-500' : 
-              insight.priorityLevel === 'Medium' ? 'bg-orange-500/10 text-orange-500' : 
-              'bg-primary/10 text-primary'
-            }`}>
-              Nivel de Prioridad: {insight.priorityLevel === 'High' ? 'Crítico' : insight.priorityLevel === 'Medium' ? 'Importante' : 'Optimización'}
-            </div>
-          </div>
-        ) : (
-          <p className="text-slate-500 text-sm italic text-center py-10">Conectando con Lumena IA...</p>
-        )}
+          ))}
+        </div>
       </div>
 
-      <div className="bg-gradient-to-br from-primary/10 to-transparent border border-primary/20 rounded-3xl p-6 text-center shadow-lg">
-        <h4 className="font-bold text-primary mb-1">Informe Pro Semanal</h4>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-4">Exportar datos a PDF</p>
-        <button className="w-full py-3.5 bg-primary text-background-dark rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] transition-transform">
-          Generar Informe Completo
-        </button>
-      </div>
+      <button 
+        onClick={onCreatePlayer}
+        className="fixed bottom-28 right-6 size-16 bg-primary text-[#0a120d] rounded-full shadow-[0_10px_30px_rgba(43,238,108,0.4)] flex items-center justify-center active:scale-90 transition-all z-20"
+      >
+        <span className="material-symbols-outlined text-[32px] font-black">add</span>
+      </button>
     </div>
   );
 };
-
-const StatMetric: React.FC<{ label: string, value: number }> = ({ label, value }) => (
-  <div className="space-y-2 bg-background-dark/30 p-4 rounded-2xl border border-white/5">
-    <div className="flex justify-between items-end">
-      <p className="text-[9px] uppercase tracking-widest text-slate-500 font-black">{label}</p>
-      <span className="text-xs font-black text-primary">{value}</span>
-    </div>
-    <div className="h-1.5 bg-background-dark rounded-full overflow-hidden border border-white/5">
-      <div 
-        className="h-full bg-gradient-to-r from-primary/50 to-primary transition-all duration-1000 ease-out" 
-        style={{ width: `${value}%` }}
-      ></div>
-    </div>
-  </div>
-);
